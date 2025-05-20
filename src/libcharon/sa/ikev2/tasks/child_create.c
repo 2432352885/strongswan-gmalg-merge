@@ -130,6 +130,7 @@ struct private_child_create_t {
 
 	/**
 	 * peer accepts TFC padding for this SA
+	 * 对等端接受此 SA 的 TFC 填充
 	 */
 	bool tfcv3;
 
@@ -217,7 +218,7 @@ static void schedule_delayed_retry(private_child_create_t *this)
 }
 
 /**
- * get the nonce from a message
+ * get the nonce from a message 获取随机数
  */
 static status_t get_nonce(message_t *message, chunk_t *nonce)
 {
@@ -532,10 +533,11 @@ static bool check_mode(private_child_create_t *this, host_t *i, host_t *r)
  * Install a CHILD_SA for usage, return value:
  * - FAILED: no acceptable proposal
  * - INVALID_ARG: diffie hellman group unacceptable
- * - NOT_FOUND: TS unacceptable
+ * - NOT_FOUND: TS unacceptable 
+ * - 流量选择以及child SA的参数选择
  */
 static status_t select_and_install(private_child_create_t *this,
-								   bool no_dh, bool ike_auth)
+								   bool no_dh, bool ike_auth) //no_dh false ike_auth false
 {
 	status_t status, status_i, status_o;
 	child_sa_outbound_state_t out_state;
@@ -546,6 +548,7 @@ static status_t select_and_install(private_child_create_t *this,
 	host_t *me, *other;
 	proposal_selection_flag_t flags = 0;
 
+	//参数有效性检查
 	if (this->proposals == NULL)
 	{
 		DBG1(DBG_IKE, "SA payload missing in message");
@@ -557,9 +560,11 @@ static status_t select_and_install(private_child_create_t *this,
 		return NOT_FOUND;
 	}
 
+	//IP地址获取
 	me = this->ike_sa->get_my_host(this->ike_sa);
 	other = this->ike_sa->get_other_host(this->ike_sa);
 
+	//检查DH group以及child_sa的加密方式
 	if (no_dh)
 	{
 		flags |= PROPOSAL_SKIP_DH;
@@ -633,7 +638,7 @@ static status_t select_and_install(private_child_create_t *this,
 		other_ts = narrow_ts(this, FALSE, this->tsi);
 	}
 
-	if (this->initiator)
+	if (this->initiator)//create_child_sa
 	{
 		if (ike_auth)
 		{
@@ -643,16 +648,16 @@ static status_t select_and_install(private_child_create_t *this,
 		else
 		{
 			charon->bus->narrow(charon->bus, this->child_sa,
-								NARROW_INITIATOR_POST_AUTH, my_ts, other_ts);
+								NARROW_INITIATOR_POST_AUTH, my_ts, other_ts);//在交换后作为发起者调用，遵循 INITIATOR_PRE_AUTH
 		}
 	}
 	else
 	{
 		charon->bus->narrow(charon->bus, this->child_sa,
-							NARROW_RESPONDER, my_ts, other_ts);
+							NARROW_RESPONDER, my_ts, other_ts);//在交换过程中作为响应方调用，对等方已通过身份验证
 	}
 
-	if (my_ts->get_count(my_ts) == 0 || other_ts->get_count(other_ts) == 0)
+	if (my_ts->get_count(my_ts) == 0 || other_ts->get_count(other_ts) == 0)//tsr和tsi为空
 	{
 		charon->bus->alert(charon->bus, ALERT_TS_MISMATCH, this->tsi, this->tsr);
 		my_ts->destroy_offset(my_ts, offsetof(traffic_selector_t, destroy));
@@ -661,6 +666,7 @@ static status_t select_and_install(private_child_create_t *this,
 		return NOT_FOUND;
 	}
 
+	//清空tsr和tsi
 	this->tsr->destroy_offset(this->tsr, offsetof(traffic_selector_t, destroy));
 	this->tsi->destroy_offset(this->tsi, offsetof(traffic_selector_t, destroy));
 	if (this->initiator)
@@ -680,7 +686,7 @@ static status_t select_and_install(private_child_create_t *this,
 		this->tsr = my_ts;
 		this->tsi = other_ts;
 
-		if (!check_mode(this, other, me))
+		if (!check_mode(this, other, me))//mode检查tunnel/transport 
 		{
 			this->mode = MODE_TUNNEL;
 		}
@@ -733,9 +739,11 @@ static status_t select_and_install(private_child_create_t *this,
 		this->ipcomp = IPCOMP_NONE;
 	}
 	status_i = status_o = FAILED;
+	//导出child_sa的键值 分配在integ和encr中 
 	if (this->keymat->derive_child_keys(this->keymat, this->proposal,
 			this->dh, nonce_i, nonce_r, &encr_i, &integ_i, &encr_r, &integ_r))
 	{
+		//入站规则 如果是发起者 安装入站规则，反之安装出站规则
 		if (this->initiator)
 		{
 			status_i = this->child_sa->install(this->child_sa, encr_r, integ_r,
@@ -748,7 +756,7 @@ static status_t select_and_install(private_child_create_t *this,
 							this->my_spi, this->my_cpi, this->initiator,
 							TRUE, this->tfcv3);
 		}
-		if (this->rekey)
+		if (this->rekey)//重新协商
 		{	/* during rekeyings we install the outbound SA and/or policies
 			 * separately: as responder when we receive the delete for the old
 			 * SA, as initiator pretty much immediately in the ike-rekey task,
@@ -766,7 +774,7 @@ static status_t select_and_install(private_child_create_t *this,
 							this->tfcv3);
 			}
 		}
-		else if (this->initiator)
+		else if (this->initiator)//出站规则
 		{
 			status_o = this->child_sa->install(this->child_sa, encr_i, integ_i,
 							this->other_spi, this->other_cpi, this->initiator,
@@ -792,7 +800,7 @@ static status_t select_and_install(private_child_create_t *this,
 	}
 	else
 	{
-		status = this->child_sa->install_policies(this->child_sa);
+		status = this->child_sa->install_policies(this->child_sa);//安装已经配置的防火墙规则
 
 		if (status != SUCCESS)
 		{
@@ -1642,7 +1650,7 @@ METHOD(task_t, process_i, status_t,
 			break;
 	}
 
-	/* check for erroneous notifies */
+	/* check for erroneous notifies 检查错误的通知*/
 	enumerator = message->create_payload_enumerator(message);
 	while (enumerator->enumerate(enumerator, &payload))
 	{

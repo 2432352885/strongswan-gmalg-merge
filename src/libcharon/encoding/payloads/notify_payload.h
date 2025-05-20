@@ -191,7 +191,7 @@ extern enum_name_t *notify_type_names;
 extern enum_name_t *notify_type_short_names;
 
 /**
- * Class representing an IKEv2-Notify Payload.
+ * Class representing an IKEv2-Notify Payload.代表IKEV2-notify有效载荷的类。
  *
  * The Notify Payload format is described in Draft section 3.10.
  */

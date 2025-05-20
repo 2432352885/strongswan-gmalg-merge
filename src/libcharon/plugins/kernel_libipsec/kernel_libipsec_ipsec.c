@@ -374,6 +374,7 @@ static void remove_exclude_route(private_kernel_libipsec_ipsec_t *this,
 
 /**
  * Install a route for the given policy
+ * 给定的出入站规则安装路由。
  *
  * this->mutex is released by this function
  */
@@ -385,6 +386,7 @@ static bool install_route(private_kernel_libipsec_ipsec_t *this,
 	host_t *src_ip;
 	bool is_virtual;
 
+	//是否为出站流量规则，如果不是则直接返回TRUE
 	if (policy->direction != POLICY_OUT)
 	{
 		this->mutex->unlock(this->mutex);
@@ -398,13 +400,13 @@ static bool install_route(private_kernel_libipsec_ipsec_t *this,
 		bool ignore = FALSE;
 
 		this->mutex->unlock(this->mutex);
-		switch (src_ts->get_type(src_ts))
+		switch (src_ts->get_type(src_ts))//IPv4/IPv6
 		{
 			case TS_IPV4_ADDR_RANGE:
 				multicast = traffic_selector_create_from_cidr("224.0.0.0/4",
-															  0, 0, 0xffff);
+															  0, 0, 0xffff);//多播地址范围
 				broadcast = traffic_selector_create_from_cidr("255.255.255.255/32",
-															  0, 0, 0xffff);
+															  0, 0, 0xffff);//广播
 				break;
 			case TS_IPV6_ADDR_RANGE:
 				multicast = traffic_selector_create_from_cidr("ff00::/8",
@@ -413,10 +415,12 @@ static bool install_route(private_kernel_libipsec_ipsec_t *this,
 			default:
 				return FALSE;
 		}
+		//判断IP是否是多播地址或者广播地址，如果是则忽略安装路由操作
 		ignore = src_ts->is_contained_in(src_ts, multicast);
 		ignore |= broadcast && src_ts->is_contained_in(src_ts, broadcast);
 		multicast->destroy(multicast);
 		DESTROY_IF(broadcast);
+		
 		if (!ignore)
 		{
 			DBG1(DBG_KNL, "error installing route with policy %R === %R %N",

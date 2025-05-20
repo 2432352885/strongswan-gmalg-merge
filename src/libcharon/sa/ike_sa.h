@@ -438,7 +438,7 @@ struct ike_sa_t {
 	void (*set_statistic)(ike_sa_t *this, statistic_t kind, uint32_t value);
 
 	/**
-	 * Get the own host address.
+	 * Get the own host address.获取本地主机地址
 	 *
 	 * @return				host address
 	 */
@@ -452,7 +452,7 @@ struct ike_sa_t {
 	void (*set_my_host) (ike_sa_t *this, host_t *me);
 
 	/**
-	 * Get the other peers host address.
+	 * Get the other peers host address.对等体的地址
 	 *
 	 * @return				host address
 	 */
