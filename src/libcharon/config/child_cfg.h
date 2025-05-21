@@ -331,7 +331,9 @@ enum child_cfg_option_t {
 	/** Don't install any IPsec policies */
 	OPT_NO_POLICIES = (1<<3),
 
-	/** Install outbound FWD IPsec policies to bypass drop policies */
+	/** Install outbound FWD IPsec policies to bypass drop policies 
+	 * 安装出站转发IPSec策略，以绕过丢弃策略
+	*/
 	OPT_FWD_OUT_POLICIES = (1<<4),
 
 	/** Force 96-bit truncation for SHA-256 */

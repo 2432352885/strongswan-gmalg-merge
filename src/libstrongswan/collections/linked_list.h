@@ -55,6 +55,7 @@ typedef void (*linked_list_invoke_t)(void *item, va_list args);
 
 /**
  * Class implementing a double linked list.
+ * 双链表
  *
  * General purpose linked list. This list is not synchronized.
  */

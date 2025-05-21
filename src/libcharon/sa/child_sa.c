@@ -139,12 +139,12 @@ struct private_child_sa_t {
 	uint32_t reqid;
 
 	/**
-	 * Did we allocate/confirm and must release the reqid?
+	 * Did we allocate/confirm and must release the reqid?是否分配或确认并且必须释放的reqid
 	 */
 	bool reqid_allocated;
 
 	/**
-	 * Is the reqid statically configured
+	 * Is the reqid statically configured 是否静态配置了的reqid
 	 */
 	bool static_reqid;
 
@@ -958,7 +958,7 @@ static bool require_policy_update()
 }
 
 /**
- * Prepare SA config to install/delete policies
+ * Prepare SA config to install/delete policies 准备SA配置以安装/删除策略。
  */
 static void prepare_sa_cfg(private_child_sa_t *this, ipsec_sa_cfg_t *my_sa,
 						   ipsec_sa_cfg_t *other_sa)
@@ -1028,10 +1028,18 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 	status_t status = SUCCESS;
 
 	status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
-	if (this->mode != MODE_TRANSPORT)
+	
+	if(!status){
+		DBG1(DBG_CHD, "FAIL: kernel add inbound plicies");
+	}
+
+	if (this->mode != MODE_TRANSPORT)//非传输模式 安装转发策略
 	{
 		in_id.dir = POLICY_FWD;
 		status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
+		if(!status){
+			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in tunnel mode")
+		}
 	}
 	return status;
 }
@@ -1064,8 +1072,11 @@ static status_t install_policies_outbound(private_child_sa_t *this,
 	status_t status = SUCCESS;
 
 	status |= charon->kernel->add_policy(charon->kernel, &out_id, &out_policy);
+	if(!status){
+		DBG1(DBG_CHD, "FAIL: kernel add outbound plicies");
+	}
 
-	if (this->mode != MODE_TRANSPORT && this->policies_fwd_out)
+	if (this->mode != MODE_TRANSPORT && this->policies_fwd_out)//非传输出站转发
 	{
 		/* install an "outbound" FWD policy in case there is a drop policy
 		 * matching outbound forwarded traffic, to allow another tunnel to use
@@ -1083,6 +1094,10 @@ static status_t install_policies_outbound(private_child_sa_t *this,
 		}
 		status |= charon->kernel->add_policy(charon->kernel, &out_id,
 											 &out_policy);
+		
+		if(!status){
+			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in no transport mode");
+		}
 		/* reset the reqid for any other further policies */
 		other_sa->reqid = this->reqid;
 	}
@@ -1090,7 +1105,7 @@ static status_t install_policies_outbound(private_child_sa_t *this,
 }
 
 /**
- * Install all policies
+ * Install all policies 安装全部策略
  */
 static status_t install_policies_internal(private_child_sa_t *this,
 	host_t *my_addr, host_t *other_addr, traffic_selector_t *my_ts,
@@ -1100,10 +1115,14 @@ static status_t install_policies_internal(private_child_sa_t *this,
 {
 	status_t status = SUCCESS;
 
+	//安装入站规则
 	status |= install_policies_inbound(this, my_addr, other_addr, my_ts,
 						other_ts, my_sa, other_sa, type, priority, manual_prio);
+
+	//outbound是否注册安装 
 	if (outbound)
 	{
+		DBG1(DBG_CHD, "FAIL: try install outbound policies");
 		status |= install_policies_outbound(this, my_addr, other_addr, my_ts,
 						other_ts, my_sa, other_sa, type, priority, manual_prio);
 	}
@@ -1248,12 +1267,14 @@ METHOD(child_sa_t, install_policies, status_t,
 	status_t status = SUCCESS;
 	bool install_outbound = FALSE;
 
-	if (!this->reqid_allocated && !this->static_reqid)
+	if (!this->reqid_allocated && !this->static_reqid)//没有reqid
 	{
+		//将流量选择器数组转换为双链表数据结构
 		my_ts_list = linked_list_create_from_enumerator(
 									array_create_enumerator(this->my_ts));
 		other_ts_list = linked_list_create_from_enumerator(
 									array_create_enumerator(this->other_ts));
+		//分配或验证reqid
 		status = charon->kernel->alloc_reqid(
 							charon->kernel, my_ts_list, other_ts_list,
 							this->mark_in, this->mark_out, this->if_id_in,
@@ -1262,24 +1283,28 @@ METHOD(child_sa_t, install_policies, status_t,
 		other_ts_list->destroy(other_ts_list);
 		if (status != SUCCESS)
 		{
+			DBG1(DBG_CHD, "failed to allocate/confirm reqid (%ld)", this->reqid);
 			return status;
 		}
 		this->reqid_allocated = TRUE;
 	}
 
-	if (!(this->outbound_state & CHILD_OUTBOUND_REGISTERED))
+	//出站SA是否在rekeying时注册过 注册过直接跳过 
+	if (!(this->outbound_state & CHILD_OUTBOUND_REGISTERED))//0, 2, 4, 6
 	{
 		install_outbound = TRUE;
 		this->outbound_state |= CHILD_OUTBOUND_POLICIES;
 	}
 
-	if (!this->config->has_option(this->config, OPT_NO_POLICIES))
+	if (!this->config->has_option(this->config, OPT_NO_POLICIES))//没有配置policies选项
 	{
 		policy_priority_t priority;
 		ipsec_sa_cfg_t my_sa, other_sa;
 		uint32_t manual_prio;
 
+		//准备sa策略配置信息
 		prepare_sa_cfg(this, &my_sa, &other_sa);
+		//策略手动优先级
 		manual_prio = this->config->get_manual_prio(this->config);
 
 		/* if we're not in state CHILD_INSTALLING (i.e. if there is no SAD
@@ -1289,13 +1314,13 @@ METHOD(child_sa_t, install_policies, status_t,
 							  : POLICY_PRIORITY_DEFAULT;
 
 		/* enumerate pairs of traffic selectors */
-		enumerator = create_policy_enumerator(this);
-		while (enumerator->enumerate(enumerator, &my_ts, &other_ts))
+		enumerator = create_policy_enumerator(this);//枚举器
+		while (enumerator->enumerate(enumerator, &my_ts, &other_ts))//赋值my_ts other_ts
 		{
 			status |= install_policies_internal(this, this->my_addr,
 									this->other_addr, my_ts, other_ts,
 									&my_sa, &other_sa, POLICY_IPSEC, priority,
-									manual_prio, install_outbound);
+									manual_prio, install_outbound);//安装出入站策略
 			if (status != SUCCESS)
 			{
 				break;
@@ -1306,8 +1331,10 @@ METHOD(child_sa_t, install_policies, status_t,
 
 	if (status == SUCCESS && this->trap)
 	{
+		DBG1(DBG_CHD, "status is success and trap is true")
 		set_state(this, CHILD_ROUTED);
 	}
+	
 	return status;
 }
 
