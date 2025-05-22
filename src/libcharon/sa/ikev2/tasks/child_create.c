@@ -800,6 +800,7 @@ static status_t select_and_install(private_child_create_t *this,
 	}
 	else
 	{
+		DBG1(DBG_CHD, "child_sa install plicies");
 		status = this->child_sa->install_policies(this->child_sa);//安装已经配置的防火墙规则
 
 		if (status != SUCCESS)
