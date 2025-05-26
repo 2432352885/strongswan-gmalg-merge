@@ -1038,7 +1038,7 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 		in_id.dir = POLICY_FWD;
 		status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
 		if(!status){
-			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in tunnel mode")
+			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in tunnel mode");
 		}
 	}
 	return status;
@@ -1331,7 +1331,7 @@ METHOD(child_sa_t, install_policies, status_t,
 
 	if (status == SUCCESS && this->trap)
 	{
-		DBG1(DBG_CHD, "status is success and trap is true")
+		DBG1(DBG_CHD, "status is success and trap is true");
 		set_state(this, CHILD_ROUTED);
 	}
 	
