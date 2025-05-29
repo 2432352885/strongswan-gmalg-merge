@@ -805,7 +805,7 @@ static void ts2ports(traffic_selector_t* ts,
 }
 
 /**
- * Convert a pair of traffic_selectors to an xfrm_selector
+ * Convert a pair of traffic_selectors to an xfrm_selector 将traffic_selectors转换为xfrm_selector类型
  */
 static struct xfrm_selector ts2selector(traffic_selector_t *src,
 										traffic_selector_t *dst,
@@ -835,6 +835,9 @@ static struct xfrm_selector ts2selector(traffic_selector_t *src,
 	}
 	sel.ifindex = interface ? if_nametoindex(interface) : 0;
 	sel.user = 0;
+
+	DBG1(DBG_KNL, "converted TS to xfrm_selector: daddr=%R, saddr=%R, dport=%u, sport=%u, proto=%u",
+		&sel.daddr, &sel.saddr, sel.dport, sel.sport, sel.proto);
 
 	return sel;
 }
@@ -2836,6 +2839,7 @@ METHOD(kernel_ipsec_t, add_policy, status_t,
 	private_kernel_netlink_ipsec_t *this, kernel_ipsec_policy_id_t *id,
 	kernel_ipsec_manage_policy_t *data)
 {
+	DBG1(DBG_KNL, "add policy");
 	policy_entry_t *policy, *current;
 	policy_sa_t *assigned_sa, *current_sa;
 	enumerator_t *enumerator;
@@ -2888,6 +2892,7 @@ METHOD(kernel_ipsec_t, add_policy, status_t,
 	}
 	else
 	{	/* use the new one, if we have no such policy */
+		DBG1(DBG_KNL, "create new policy");
 		policy->used_by = linked_list_create();
 		this->policies->put(this->policies, policy, policy);
 	}

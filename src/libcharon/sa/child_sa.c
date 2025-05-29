@@ -1027,6 +1027,10 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 	};
 	status_t status = SUCCESS;
 
+	DBG1(DBG_CHD, "my_ts: %R", my_ts);
+	DBG1(DBG_CHD, "other_ts: %R", other_ts);
+
+	DBG1(DBG_CHD, "Add a policy to the SPD.");
 	status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
 	
 	if(!status){
@@ -1122,9 +1126,11 @@ static status_t install_policies_internal(private_child_sa_t *this,
 	//outbound是否注册安装 
 	if (outbound)
 	{
-		DBG1(DBG_CHD, "FAIL: try install outbound policies");
 		status |= install_policies_outbound(this, my_addr, other_addr, my_ts,
 						other_ts, my_sa, other_sa, type, priority, manual_prio);
+		if(!status){
+			DBG1(DBG_CHD, "FAIL: try install outbound policies");
+		}
 	}
 	return status;
 }
@@ -1154,6 +1160,7 @@ static void del_policies_inbound(private_child_sa_t *this,
 		.sa = my_sa,
 	};
 
+	DBG1(DBG_CHD, "FAIL: delete inbount/fwd policies");
 	charon->kernel->del_policy(charon->kernel, &in_id, &in_policy);
 
 	if (this->mode != MODE_TRANSPORT)
@@ -1317,6 +1324,10 @@ METHOD(child_sa_t, install_policies, status_t,
 		enumerator = create_policy_enumerator(this);//枚举器
 		while (enumerator->enumerate(enumerator, &my_ts, &other_ts))//赋值my_ts other_ts
 		{
+			//查看my_ts和other_ts的数据
+			
+			DBG1(DBG_CFG, "my_ts: %R, other_ts: %R", my_ts, other_ts);
+			
 			status |= install_policies_internal(this, this->my_addr,
 									this->other_addr, my_ts, other_ts,
 									&my_sa, &other_sa, POLICY_IPSEC, priority,

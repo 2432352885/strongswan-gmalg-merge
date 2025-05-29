@@ -60,6 +60,7 @@ static bool create_router(private_kernel_libipsec_plugin_t *this,
 {
 	if (reg)
 	{	/* registers as packet handler etc. */
+		DBG1(DBG_ESP, "kernel_libipsce plugin route create");
 		this->router = kernel_libipsec_router_create();
 	}
 	else
