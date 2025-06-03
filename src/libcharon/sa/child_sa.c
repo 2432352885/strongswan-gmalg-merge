@@ -1027,13 +1027,13 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 	};
 	status_t status = SUCCESS;
 
-	DBG1(DBG_CHD, "my_ts: %R", my_ts);
-	DBG1(DBG_CHD, "other_ts: %R", other_ts);
+	DBG1(DBG_CHD, " my_ts: %R", my_ts);
+	DBG1(DBG_CHD, "other_ts: %R",other_ts);
 
 	DBG1(DBG_CHD, "Add a policy to the SPD.");
 	status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
 	
-	if(!status){
+	if(status != SUCCESS){
 		DBG1(DBG_CHD, "FAIL: kernel add inbound plicies");
 	}
 
@@ -1041,8 +1041,8 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 	{
 		in_id.dir = POLICY_FWD;
 		status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
-		if(!status){
-			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in tunnel mode");
+		if(status != SUCCESS){
+			DBG1(DBG_CHD, "[%s:%d]FAIL: kernel add fwd plicies in tunnel mode", __FILE__, __LINE__);
 		}
 	}
 	return status;
@@ -1076,7 +1076,7 @@ static status_t install_policies_outbound(private_child_sa_t *this,
 	status_t status = SUCCESS;
 
 	status |= charon->kernel->add_policy(charon->kernel, &out_id, &out_policy);
-	if(!status){
+	if(status != SUCCESS){
 		DBG1(DBG_CHD, "FAIL: kernel add outbound plicies");
 	}
 
@@ -1099,7 +1099,7 @@ static status_t install_policies_outbound(private_child_sa_t *this,
 		status |= charon->kernel->add_policy(charon->kernel, &out_id,
 											 &out_policy);
 		
-		if(!status){
+		if(status != SUCCESS){
 			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in no transport mode");
 		}
 		/* reset the reqid for any other further policies */
@@ -1128,7 +1128,7 @@ static status_t install_policies_internal(private_child_sa_t *this,
 	{
 		status |= install_policies_outbound(this, my_addr, other_addr, my_ts,
 						other_ts, my_sa, other_sa, type, priority, manual_prio);
-		if(!status){
+		if(status != SUCCESS){
 			DBG1(DBG_CHD, "FAIL: try install outbound policies");
 		}
 	}
