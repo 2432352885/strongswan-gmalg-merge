@@ -524,7 +524,7 @@ METHOD(kernel_ipsec_t, add_policy, status_t,
 	
 	if (status != SUCCESS)
 	{
-		DBG1(DBG_KNL, "kenerl libipsec add policy fail")
+		DBG1(DBG_KNL, "kenerl libipsec add policy fail");
 		return status;
 	}
 	/* we track policies in order to install routes */
