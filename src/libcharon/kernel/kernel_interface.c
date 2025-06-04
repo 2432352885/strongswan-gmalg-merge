@@ -503,6 +503,7 @@ METHOD(kernel_interface_t, add_policy, status_t,
 {
 	if (!this->ipsec)
 	{
+		DBG1(DBG_KNL, "this is not ipsec");
 		return NOT_SUPPORTED;
 	}
 	return this->ipsec->add_policy(this->ipsec, id, data);
@@ -699,6 +700,7 @@ METHOD(kernel_interface_t, get_address_by_ts, status_t,
 		host = host_create_from_string("::1", 0);
 	}
 
+	//判断host是否存在这个流量选择中
 	if (ts->includes(ts, host))
 	{
 		*ip = host_create_any(family);
@@ -712,7 +714,8 @@ METHOD(kernel_interface_t, get_address_by_ts, status_t,
 	}
 	host->destroy(host);
 
-	/* try virtual IPs only first (on all interfaces) */
+	/* try virtual IPs only first (on all interfaces) 
+	首先仅尝试虚拟IP（在所有接口上）*/
 	addrs = create_address_enumerator(this,
 									  ADDR_TYPE_ALL ^ ADDR_TYPE_REGULAR);
 	while (addrs->enumerate(addrs, (void**)&host))
@@ -731,7 +734,8 @@ METHOD(kernel_interface_t, get_address_by_ts, status_t,
 	addrs->destroy(addrs);
 
 	if (!found)
-	{	/* then try the regular addresses (on all interfaces) */
+	{	/* then try the regular addresses (on all interfaces) 
+			常规的地址*/
 		addrs = create_address_enumerator(this,
 										  ADDR_TYPE_ALL ^ ADDR_TYPE_VIRTUAL);
 		while (addrs->enumerate(addrs, (void**)&host))
@@ -749,7 +753,7 @@ METHOD(kernel_interface_t, get_address_by_ts, status_t,
 		}
 		addrs->destroy(addrs);
 	}
-
+	//本地不存在当前流量选择器的IP
 	if (!found)
 	{
 		DBG2(DBG_KNL, "no local address found in traffic selector %R", ts);

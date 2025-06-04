@@ -416,6 +416,7 @@ static bool install_route(private_kernel_libipsec_ipsec_t *this,
 				return FALSE;
 		}
 		//判断IP是否是多播地址或者广播地址，如果是则忽略安装路由操作
+		DBG1(DBG_KNL, "multicast: %R, broadcast: %R", multicast, broadcast);
 		ignore = src_ts->is_contained_in(src_ts, multicast);
 		ignore |= broadcast && src_ts->is_contained_in(src_ts, broadcast);
 		multicast->destroy(multicast);
@@ -512,6 +513,7 @@ METHOD(kernel_ipsec_t, add_policy, status_t,
 	private_kernel_libipsec_ipsec_t *this, kernel_ipsec_policy_id_t *id,
 	kernel_ipsec_manage_policy_t *data)
 {
+	DBG1(DBG_CHD, "kernel_libipsec_ipsec add policy function");
 	policy_entry_t *policy, *found = NULL;
 	status_t status;
 
@@ -519,8 +521,10 @@ METHOD(kernel_ipsec_t, add_policy, status_t,
 										 id->src_ts, id->dst_ts, id->dir,
 										 data->type, data->sa, id->mark,
 										 data->prio);
+	
 	if (status != SUCCESS)
 	{
+		DBG1(DBG_KNL, "kenerl libipsec add policy fail")
 		return status;
 	}
 	/* we track policies in order to install routes */

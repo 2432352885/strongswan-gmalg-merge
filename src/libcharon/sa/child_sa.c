@@ -1042,7 +1042,7 @@ static status_t install_policies_inbound(private_child_sa_t *this,
 		in_id.dir = POLICY_FWD;
 		status |= charon->kernel->add_policy(charon->kernel, &in_id, &in_policy);
 		if(status != SUCCESS){
-			DBG1(DBG_CHD, "[%s:%d]FAIL: kernel add fwd plicies in tunnel mode", __FILE__, __LINE__);
+			DBG1(DBG_CHD, "FAIL: kernel add fwd plicies in tunnel mode");
 		}
 	}
 	return status;
@@ -1159,8 +1159,6 @@ static void del_policies_inbound(private_child_sa_t *this,
 		.dst = my_addr,
 		.sa = my_sa,
 	};
-
-	DBG1(DBG_CHD, "FAIL: delete inbount/fwd policies");
 	charon->kernel->del_policy(charon->kernel, &in_id, &in_policy);
 
 	if (this->mode != MODE_TRANSPORT)

@@ -442,7 +442,7 @@ struct kernel_interface_t {
 	/**
 	 * Tries to find an IP address of a local interface that is included in the
 	 * supplied traffic selector.
-	 * 找一个和流量选择器同网段的本地接口的IP
+	 * 尝试查找包含在提供的流量选择器中的本地接口的IP地址。
 	 *
 	 * @param ts			traffic selector
 	 * @param ip			returned IP address (has to be destroyed)

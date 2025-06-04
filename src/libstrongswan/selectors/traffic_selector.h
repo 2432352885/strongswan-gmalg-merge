@@ -213,6 +213,7 @@ struct traffic_selector_t {
 	/**
 	 * Check if a specific host is included in the address range of
 	 * this traffic selector.
+	 * 检查特定主机是否包含在此流量选择器的地址范围内。
 	 *
 	 * @param host		the host to check
 	 */
